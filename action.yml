@@ -1,0 +1,15 @@
+name: 'Github Tag Bump for docuwallet-dev'
+description: 'docuwallet-dev 스테이지 배포 자동화를 위한 GitHub Action'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+outputs:
+  new_tag:
+    description: 'Generated tag'
+  tag:
+    description: 'The latest tag after running this action'
+  part:
+    description: 'The part of version which was bumped'
+branding:
+  icon: 'git-merge'  
+  color: 'purple'
