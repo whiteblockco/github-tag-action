@@ -1,2 +1,5 @@
 # github-tag-action
-dev 스테이지 배포 자동화를 위한 GitHub Action
+
+Inspired by [anothrNick/github-tag-action](https://github.com/anothrNick/github-tag-action)
+
+Increase build number when PR is merged into develop branch.
