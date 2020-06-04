@@ -43,7 +43,7 @@ func parseTag(tag string) (int, int, int, int) {
 
 	major, _ := strconv.Atoi(arr[0])
 	minor, _ := strconv.Atoi(arr[1])
-	var patch int
+	patch, _ := strconv.Atoi(arr[2])
 	buildNumber := 0
 	if strings.Index(arr[2], "-") != -1 {
 		str := strings.Split(arr[2], "-")
