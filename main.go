@@ -5,9 +5,12 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
 var versionFormatWithBuildNumber = "%d.%d.%d-%d"
@@ -93,6 +96,11 @@ func getLatestTag(tagIter *object.TagIter) string {
 	return latestTag
 }
 
+func koreanTime() time.Time {
+	loc, _ := time.LoadLocation("Asia/Seoul")
+	return time.Now().In(loc)
+}
+
 func main() {
 	r, _ := git.PlainOpen("./")
 
@@ -103,24 +111,30 @@ func main() {
 	major, minor, patch, buildNumber := parseTag(latestTag)
 	buildNumber++
 	newTag := fmt.Sprintf("%d.%d.%d-%d", major, minor, patch, buildNumber)
-	fmt.Println(newTag)
+	fmt.Println(fmt.Sprintf("New tag: <%s>", newTag))
 	c, err := getHeadCommit(r)
 	ExitIfError(err)
 
-	fmt.Println("Lastest commit: ", c)
 	opts := &git.CreateTagOptions{
 		Tagger: &object.Signature{
 			Name:  "whiteblock",
 			Email: "developer@whiteblock.co",
+			When: koreanTime(),
 		},
 		Message: "message",
 		SignKey: nil,
 	}
 	err = opts.Validate(r, c.Hash)
-	ref, err := r.CreateTag(newTag, c.Hash, opts)
+	_, err = r.CreateTag(newTag, c.Hash, opts)
 	ExitIfError(err)
-
-	fmt.Println(ref)
-	err = r.Push(&git.PushOptions{})
+	fmt.Println("Latest commit: ", c)
+	refSpec := fmt.Sprintf("+refs/tags/%s:refs/tags/%s", newTag, newTag)
+	err = r.Push(&git.PushOptions{
+		Auth: &http.BasicAuth{
+			Username: "USER_NAME", // this can be anything except an empty string
+			Password: os.Getenv("GITHUB_TOKEN"),
+		},
+		RefSpecs: []config.RefSpec{config.RefSpec(refSpec)},
+	})
 	ExitIfError(err)
 }
