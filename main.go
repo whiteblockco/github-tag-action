@@ -10,7 +10,9 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
-// CheckIfError should be used to naively panics if an error is not nil.
+var versionFormatWithBuildNumber = "%d.%d.%d-%d"
+
+// ExitIfError should be used to naively panics if an error is not nil.
 func ExitIfError(err error) {
 	if err == nil {
 		return
@@ -29,8 +31,8 @@ func Warning(format string, args ...interface{}) {
 	fmt.Printf("\x1b[36;1m%s\x1b[0m\n", fmt.Sprintf(format, args...))
 }
 
-func parseTag(t *object.Tag) (int, int, int, int) {
-	arr := strings.Split(t.Name, ".")
+func parseTag(tag string) (int, int, int, int) {
+	arr := strings.Split(tag, ".")
 	if len(arr) != 3 {
 		// TODO: Make to error below
 		return 0, 0, 0, 0
@@ -57,17 +59,48 @@ func getHeadCommit(r *git.Repository) (*object.Commit, error) {
 	ExitIfError(err)
 	return commit, err
 }
+
+func isNewerVersion(old, new string) bool {
+	oMajor, oMinor, oPatch, oBuildNumber := parseTag(old)
+	nMajor, nMinor, nPatch, nBuildNumber := parseTag(new)
+	if oMajor > nMajor {
+		return false
+	} else if oMajor == nMajor {
+		if oMinor > nMinor {
+			return false
+		} else if oMinor == nMinor {
+			if oPatch > nPatch {
+				return false
+			} else if oPatch == nPatch {
+				if oBuildNumber > nBuildNumber {
+					return false
+				}
+			}
+		}
+	}
+	return true
+}
+
+func getLatestTag(tagIter *object.TagIter) string {
+	latestTag := "0.0.0-0"
+	tagIter.ForEach(func(t *object.Tag) error {
+		if isNewerVersion(latestTag, t.Name) {
+			major, minor, patch, buildNumber := parseTag(t.Name)
+			latestTag = fmt.Sprintf(versionFormatWithBuildNumber, major, minor, patch, buildNumber)
+		}
+		return nil
+	})
+	return latestTag
+}
+
 func main() {
 	r, _ := git.PlainOpen("./")
 
 	tags, err := r.TagObjects()
 	ExitIfError(err)
 
-	var major, minor, patch, buildNumber int
-	latestTag, err := tags.Next()
-	ExitIfError(err)
-
-	major, minor, patch, buildNumber = parseTag(latestTag)
+	latestTag := getLatestTag(tags)
+	major, minor, patch, buildNumber := parseTag(latestTag)
 	buildNumber++
 	newTag := fmt.Sprintf("%d.%d.%d-%d", major, minor, patch, buildNumber)
 	fmt.Println(newTag)
@@ -75,7 +108,16 @@ func main() {
 	ExitIfError(err)
 
 	fmt.Println("Lastest commit: ", c)
-	ref, err := r.CreateTag(newTag, c.Hash, nil)
+	opts := &git.CreateTagOptions{
+		Tagger: &object.Signature{
+			Name:  "whiteblock",
+			Email: "developer@whiteblock.co",
+		},
+		Message: "message",
+		SignKey: nil,
+	}
+	err = opts.Validate(r, c.Hash)
+	ref, err := r.CreateTag(newTag, c.Hash, opts)
 	ExitIfError(err)
 
 	fmt.Println(ref)
