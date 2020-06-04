@@ -128,7 +128,7 @@ func main() {
 			Username: "JUST_DUMMY_VALUE", // this can be anything except an empty string
 			Password: os.Getenv("GITHUB_TOKEN"),
 		},
-		RefSpecs: []config.RefSpec{"refs/tags/*"},
+		RefSpecs: []config.RefSpec{"+refs/tags/*:refs/remotes/origin/tags/*"},
 	})
 	ExitIfError(err)
 }
