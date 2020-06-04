@@ -132,7 +132,7 @@ func main() {
 	err = r.Push(&git.PushOptions{
 		Auth: &http.BasicAuth{
 			Username: "USER_NAME", // this can be anything except an empty string
-			Password: os.Getenv("GITHUB_TOKEN"),
+			Password: os.Getenv("REPO_TOKEN"),
 		},
 		RefSpecs: []config.RefSpec{config.RefSpec(refSpec)},
 	})
