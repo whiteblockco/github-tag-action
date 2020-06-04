@@ -3,6 +3,7 @@ description: 'docuwallet-dev 스테이지 배포 자동화를 위한 GitHub Acti
 runs:
   using: 'docker'
   image: 'Dockerfile'
+  main: ''
 outputs:
   new_tag:
     description: 'Generated tag'
