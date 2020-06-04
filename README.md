@@ -42,7 +42,7 @@ jobs:
       with:
         fetch-depth: '0'
     - name: Bump version and push tag
-      uses: whiteblockco/github-tag-action@1.0.0
+      uses: whiteblockco/github-tag-action@master
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
