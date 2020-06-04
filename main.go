@@ -121,4 +121,6 @@ func main() {
 	ExitIfError(err)
 
 	fmt.Println(ref)
+	err = r.Push(&git.PushOptions{})
+	ExitIfError(err)
 }
