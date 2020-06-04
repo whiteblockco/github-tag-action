@@ -5,15 +5,13 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	"golang.org/x/crypto/openpgp"
 )
 
 // CheckIfError should be used to naively panics if an error is not nil.
-func CheckIfError(err error) {
+func ExitIfError(err error) {
 	if err == nil {
 		return
 	}
@@ -50,34 +48,35 @@ func parseTag(t *object.Tag) (int, int, int, int) {
 	return major, minor, patch, buildNumber
 }
 
+func getHeadCommit(r *git.Repository) (*object.Commit, error) {
+	head, err := r.Head()
+	ExitIfError(err)
+	cIter, err := r.Log(&git.LogOptions{From: head.Hash()})
+	ExitIfError(err)
+	commit, err := cIter.Next()
+	ExitIfError(err)
+	return commit, err
+}
 func main() {
 	r, _ := git.PlainOpen("./")
 
 	tags, err := r.TagObjects()
-	CheckIfError(err)
+	ExitIfError(err)
+
 	var major, minor, patch, buildNumber int
-	latestTag, _ := tags.Next()
+	latestTag, err := tags.Next()
+	ExitIfError(err)
+
 	major, minor, patch, buildNumber = parseTag(latestTag)
 	buildNumber++
 	newTag := fmt.Sprintf("%d.%d.%d-%d", major, minor, patch, buildNumber)
+	fmt.Println(newTag)
+	c, err := getHeadCommit(r)
+	ExitIfError(err)
 
-	c, _ := latestTag.Commit()
-	tagOpt := git.CreateTagOptions{
-		Tagger: &object.Signature{
-			Name:  "",
-			Email: "",
-			When:  time.Now(),
-		},
-		Message: "",
-		SignKey: &openpgp.Entity{},
-	} // TODO: Fix here
-	err = tagOpt.Validate(r, c.Hash)
-	if err != nil {
-		fmt.Println("Failed to validate tag")
-	}
-	ref, err := r.CreateTag(newTag, c.Hash, &tagOpt)
-	if err != nil {
-		fmt.Println("Failed to create tag")
-	}
+	fmt.Println("Lastest commit: ", c)
+	ref, err := r.CreateTag(newTag, c.Hash, nil)
+	ExitIfError(err)
+
 	fmt.Println(ref)
 }
