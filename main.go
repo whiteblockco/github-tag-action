@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 )
@@ -127,6 +128,7 @@ func main() {
 			Username: "JUST_DUMMY_VALUE", // this can be anything except an empty string
 			Password: os.Getenv("GITHUB_TOKEN"),
 		},
+		RefSpecs: []config.RefSpec{"refs/tags/*"},
 	})
 	ExitIfError(err)
 }
