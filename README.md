@@ -2,6 +2,8 @@
 
 dev 스테이지 배포 자동화를 위한 [GitHub Action](https://github.com/features/actions)
 
+**PR이 develop 브랜치에 merge 될 때 build_number 를 증가시켜 태그해 줌**
+
 k8s의 [namespace](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/) 를 사용해 prod 환경과 테스트 및 개발 환경을 분리함. 같은 클러스터 다른 namespace
 
 전체적인 흐름은 다음과 같음
@@ -26,6 +28,7 @@ develop 브랜치는 다음과 같은 포맷으로 태깅함
  
 # Usage
 
+```yaml
 name: Bump version
 on:
   push:
@@ -42,3 +45,4 @@ jobs:
       uses: whiteblockco/github-tag-action@1.0.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
