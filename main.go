@@ -71,7 +71,7 @@ func getHeadCommit(r *git.Repository) (*object.Commit, error) {
 func summeryCommitMessage(r *git.Repository, prevLatestTag *VersionTag) (string, error) {
 	head, err := r.Head()
 	if err != nil {
-		Warning("Failed to get head reference: %s", err.Error())
+		Warning("[warning] Failed to get head reference: %s", err.Error())
 		return "", err
 	}
 
@@ -79,12 +79,12 @@ func summeryCommitMessage(r *git.Repository, prevLatestTag *VersionTag) (string,
 	var messages []string
 	commit, err := cIter.Next()
 	if err != nil {
-		Warning("Failed to get head commit: %s", err.Error())
+		Warning("[warning] Failed to get head commit: %s", err.Error())
 		return "", err
 	}
 	prevTagCommit, err := prevLatestTag.Tag.Commit()
 	if err != nil {
-		Warning("Failed to get latest tag: %s", err.Error())
+		Warning("[warning] Failed to get latest tag: %s", err.Error())
 		return "", err
 	}
 	for commit != nil && commit.Hash != prevTagCommit.Hash {
@@ -97,10 +97,10 @@ func summeryCommitMessage(r *git.Repository, prevLatestTag *VersionTag) (string,
 
 	summery := ""
 	for i := range messages {
-		summery += "*" + messages[i]
+		summery += "* " + messages[i]
 	}
 	if summery == "" {
-		summery = "Nothing new, Just for tagging."
+		summery = "Nothing new, just for tagging."
 	}
 	return summery, nil
 }
@@ -133,7 +133,6 @@ func getLatestTag(tagIter *object.TagIter) (VersionTag, error) {
 	}
 	if err := tagIter.ForEach(func(t *object.Tag) error {
 		tmpTag, err := parseTag(*t)
-		Info("parsed tag: %s", tmpTag)
 		if err != nil {
 			Warning(err.Error())
 			return nil
@@ -141,7 +140,6 @@ func getLatestTag(tagIter *object.TagIter) (VersionTag, error) {
 		if isNewerVersion(&latestTag, &tmpTag) {
 			latestTag = tmpTag
 		}
-		Info("latestTag: %s", tmpTag)
 		return nil
 	}); err != nil {
 		return latestTag, err
@@ -163,7 +161,7 @@ func main() {
 	latestTag, err := getLatestTag(tags)
 	ExitIfError(err)
 
-	Info("latestTag: %s", latestTag.Tag.Name)
+	Info("[info] latestTag: %s", latestTag.Tag.Name)
 	if latestTag.BuildNumber == 0 {
 		latestTag.Patch++
 	}
@@ -191,7 +189,7 @@ func main() {
 	newTag := fmt.Sprintf("%d.%d.%d-%d", latestTag.Major, latestTag.Minor, latestTag.Patch, latestTag.BuildNumber)
 	_, err = r.CreateTag(newTag, c.Hash, opts)
 	ExitIfError(err)
-	fmt.Println("Latest commit: ", c)
+	Info("[info] Latest commit: ", c)
 	refSpec := fmt.Sprintf("+refs/tags/%s:refs/tags/%s", newTag, newTag)
 	err = r.Push(&git.PushOptions{
 		Auth: &http.BasicAuth{
@@ -201,5 +199,5 @@ func main() {
 		RefSpecs: []config.RefSpec{config.RefSpec(refSpec)},
 	})
 	ExitIfError(err)
-	Info("Success to bump version: %s", newTag)
+	Info("[info] Success to bump version: %s", newTag)
 }
