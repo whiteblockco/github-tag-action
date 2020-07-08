@@ -1,4 +1,4 @@
-# github-tag-action
+# GitHub-tag-action
 
 Inspired by [anothrNick/github-tag-action](https://github.com/anothrNick/github-tag-action)
 
@@ -7,6 +7,7 @@ For example, let's assume that latest tag is `0.1.0-0`. After running this actio
 
 
 # Usage
+.github/workflows/main.yml
 
 ```yaml
 name: Increase build number
