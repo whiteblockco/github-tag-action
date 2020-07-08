@@ -7,7 +7,8 @@ For example, let's assume that latest tag is `0.1.0-0`. After running this actio
 
 
 # Usage
-.github/workflows/main.yml
+
+in .github/workflows/main.yml
 
 ```yaml
 name: Increase build number
@@ -25,11 +26,13 @@ jobs:
     - name: Bump version and push tag
       uses: whiteblockco/github-tag-action@master
       env:
-        REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
+        REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-REPO_TOKEN: For reading repository content, `REPO_TOKEN` is a deploy key of repository that run the github action. 
-You should create on `github.com/USERNAME/REPO/settings/keys` and set secret (https://github.com/USERNAME/REPO/settings/secrets/new)
+> GitHub automatically creates a GITHUB_TOKEN secret to use in your workflow. You can use the GITHUB_TOKEN to authenticate in a workflow run.
+
+- https://docs.github.com/en/actions/configuring-and-managing-workflows/authenticating-with-the-github_token
+
 
 # Note
 
@@ -38,6 +41,3 @@ This action use annotated tag instead of lightweight tag. Because `man git-tag` 
 > Annotated tags are meant for release while lightweight tags are meant for private or temporary object labels.
 
 - https://stackoverflow.com/a/35059291/4108346
-
-If buildNumber is 0 this action increase patch part and set build number to 1
-ex) `0.1.1 -> 0.1.2-1`, `1.2.3->1.2.4-1`  
