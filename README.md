@@ -37,3 +37,6 @@ This action use annotated tag instead of lightweight tag. Because `man git-tag` 
 > Annotated tags are meant for release while lightweight tags are meant for private or temporary object labels.
 
 - https://stackoverflow.com/a/35059291/4108346
+
+If buildNumber is 0 this action increase patch part and set build number to 1
+ex) `0.1.1 -> 0.1.2-1`, `1.2.3->1.2.4-1`  
