@@ -1,19 +1,25 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"os"
-	"strconv"
-	"strings"
-	"time"
-
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
-var versionFormatWithBuildNumber = "%d.%d.%d-%d"
+type VersionTag struct {
+	Tag         object.Tag
+	Major       int
+	Minor       int
+	Patch       int
+	BuildNumber int
+}
 
 // ExitIfError should be used to naively panics if an error is not nil.
 func ExitIfError(err error) {
@@ -34,11 +40,10 @@ func Warning(format string, args ...interface{}) {
 	fmt.Printf("\x1b[36;1m%s\x1b[0m\n", fmt.Sprintf(format, args...))
 }
 
-func parseTag(tag string) (int, int, int, int) {
-	arr := strings.Split(tag, ".")
+func parseTag(tag object.Tag) (VersionTag, error) {
+	arr := strings.Split(tag.Name, ".")
 	if len(arr) != 3 {
-		// TODO: Make to error below
-		return 0, 0, 0, 0
+		return VersionTag{}, errors.New(fmt.Sprintf("Invalid tag format: <%s>", tag.Name))
 	}
 
 	major, _ := strconv.Atoi(arr[0])
@@ -50,7 +55,7 @@ func parseTag(tag string) (int, int, int, int) {
 		patch, _ = strconv.Atoi(str[0])
 		buildNumber, _ = strconv.Atoi(str[1])
 	}
-	return major, minor, patch, buildNumber
+	return VersionTag{tag, major, minor, patch, buildNumber}, nil
 }
 
 func getHeadCommit(r *git.Repository) (*object.Commit, error) {
@@ -63,19 +68,44 @@ func getHeadCommit(r *git.Repository) (*object.Commit, error) {
 	return commit, err
 }
 
-func isNewerVersion(old, new string) bool {
-	oMajor, oMinor, oPatch, oBuildNumber := parseTag(old)
-	nMajor, nMinor, nPatch, nBuildNumber := parseTag(new)
-	if oMajor > nMajor {
+func summeryCommitMessage(r *git.Repository, prevLatestTag *VersionTag) string {
+	head, err := r.Head()
+
+	ExitIfError(err)
+	cIter, err := r.Log(&git.LogOptions{From: head.Hash()})
+	var messages []string
+	commit, err := cIter.Next()
+	ExitIfError(err)
+	prevTagCommit, err := prevLatestTag.Tag.Commit()
+	ExitIfError(err)
+	for commit != nil && commit.Hash != prevTagCommit.Hash {
+		messages = append(messages, commit.Message)
+		commit, err = cIter.Next()
+		if err != nil {
+			break
+		}
+	}
+	switch len(messages) {
+	case 0:
+		return "Nothing new, Just for tagging."
+	case 1:
+		return fmt.Sprintf("* %s", messages[0])
+	default:
+		return strings.Join(messages, "* ")
+	}
+}
+
+func isNewerVersion(old, new *VersionTag) bool {
+	if old.Major > new.Major {
 		return false
-	} else if oMajor == nMajor {
-		if oMinor > nMinor {
+	} else if old.Major == new.Major {
+		if old.Minor > new.Minor {
 			return false
-		} else if oMinor == nMinor {
-			if oPatch > nPatch {
+		} else if old.Minor == new.Minor {
+			if old.Patch > new.Patch {
 				return false
-			} else if oPatch == nPatch {
-				if oBuildNumber > nBuildNumber {
+			} else if old.Patch == new.Patch {
+				if old.BuildNumber > new.BuildNumber {
 					return false
 				}
 			}
@@ -84,12 +114,20 @@ func isNewerVersion(old, new string) bool {
 	return true
 }
 
-func getLatestTag(tagIter *object.TagIter) string {
-	latestTag := "0.0.0-0"
+func getLatestTag(tagIter *object.TagIter) VersionTag {
+	latestTag := VersionTag{
+		Major:       0,
+		Minor:       0,
+		Patch:       0,
+		BuildNumber: 0,
+	}
 	tagIter.ForEach(func(t *object.Tag) error {
-		if isNewerVersion(latestTag, t.Name) {
-			major, minor, patch, buildNumber := parseTag(t.Name)
-			latestTag = fmt.Sprintf(versionFormatWithBuildNumber, major, minor, patch, buildNumber)
+		tmpTag, err := parseTag(*t)
+		if err != nil {
+			return err
+		}
+		if isNewerVersion(&latestTag, &tmpTag) {
+			latestTag = tmpTag
 		}
 		return nil
 	})
@@ -108,23 +146,28 @@ func main() {
 	ExitIfError(err)
 
 	latestTag := getLatestTag(tags)
-	major, minor, patch, buildNumber := parseTag(latestTag)
-	buildNumber++
-	newTag := fmt.Sprintf("%d.%d.%d-%d", major, minor, patch, buildNumber)
-	fmt.Println(fmt.Sprintf("New tag: <%s>", newTag))
-	c, err := getHeadCommit(r)
-	ExitIfError(err)
+	if latestTag.BuildNumber == 0 {
+		latestTag.Patch++
+	}
+	latestTag.BuildNumber++
+	// Increase build number
 
+	message := summeryCommitMessage(r, &latestTag)
 	opts := &git.CreateTagOptions{
 		Tagger: &object.Signature{
 			Name:  "whiteblock",
 			Email: "developer@whiteblock.co",
-			When: koreanTime(),
+			When:  koreanTime(),
 		},
-		Message: "message",
+		Message: message,
 		SignKey: nil,
 	}
+	// Summery commit messages to write description of tag
+
+	c, err := getHeadCommit(r)
+	ExitIfError(err)
 	err = opts.Validate(r, c.Hash)
+	newTag := fmt.Sprintf("%d.%d.%d-%d", latestTag.Major, latestTag.Minor, latestTag.Patch, latestTag.BuildNumber)
 	_, err = r.CreateTag(newTag, c.Hash, opts)
 	ExitIfError(err)
 	fmt.Println("Latest commit: ", c)
