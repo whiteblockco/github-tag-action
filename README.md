@@ -24,8 +24,11 @@ jobs:
     - name: Bump version and push tag
       uses: whiteblockco/github-tag-action@master
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
 ```
+
+REPO_TOKEN: For reading repository content, `REPO_TOKEN` is a deploy key of repository that run the github action. 
+You should create on `github.com/USERNAME/REPO/settings/keys` and set secret (https://github.com/USERNAME/REPO/settings/secrets/new)
 
 # Note
 
