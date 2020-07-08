@@ -125,14 +125,14 @@ func isNewerVersion(old, new *VersionTag) bool {
 	return true
 }
 
-func getLatestTag(tagIter *object.TagIter) VersionTag {
+func getLatestTag(tagIter *object.TagIter) (VersionTag, error) {
 	latestTag := VersionTag{
 		Major:       0,
 		Minor:       0,
 		Patch:       0,
 		BuildNumber: 0,
 	}
-	tagIter.ForEach(func(t *object.Tag) error {
+	if err := tagIter.ForEach(func(t *object.Tag) error {
 		tmpTag, err := parseTag(*t)
 		if err != nil {
 			return err
@@ -141,8 +141,10 @@ func getLatestTag(tagIter *object.TagIter) VersionTag {
 			latestTag = tmpTag
 		}
 		return nil
-	})
-	return latestTag
+	}); err != nil {
+		return latestTag, err
+	}
+	return latestTag, nil
 }
 
 func koreanTime() time.Time {
@@ -156,7 +158,9 @@ func main() {
 	tags, err := r.TagObjects()
 	ExitIfError(err)
 
-	latestTag := getLatestTag(tags)
+	latestTag, err := getLatestTag(tags)
+	ExitIfError(err)
+
 	log.Printf("::debug:: latestTag: %s", latestTag.Tag.Name)
 	if latestTag.BuildNumber == 0 {
 		latestTag.Patch++
