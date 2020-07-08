@@ -7,7 +7,6 @@ import (
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -72,7 +71,7 @@ func getHeadCommit(r *git.Repository) (*object.Commit, error) {
 func summeryCommitMessage(r *git.Repository, prevLatestTag *VersionTag) (string, error) {
 	head, err := r.Head()
 	if err != nil {
-		log.Printf("Failed to get head reference: %s", err.Error())
+		Warning("Failed to get head reference: %s", err.Error())
 		return "", err
 	}
 
@@ -80,12 +79,12 @@ func summeryCommitMessage(r *git.Repository, prevLatestTag *VersionTag) (string,
 	var messages []string
 	commit, err := cIter.Next()
 	if err != nil {
-		log.Printf("Failed to get head commit: %s", err.Error())
+		Warning("Failed to get head commit: %s", err.Error())
 		return "", err
 	}
 	prevTagCommit, err := prevLatestTag.Tag.Commit()
 	if err != nil {
-		log.Printf("Failed to get latest tag: %s", err.Error())
+		Warning("Failed to get latest tag: %s", err.Error())
 		return "", err
 	}
 	for commit != nil && commit.Hash != prevTagCommit.Hash {
@@ -161,7 +160,7 @@ func main() {
 	latestTag, err := getLatestTag(tags)
 	ExitIfError(err)
 
-	log.Printf("::debug:: latestTag: %s", latestTag.Tag.Name)
+	Info("::debug:: latestTag: %s", latestTag.Tag.Name)
 	if latestTag.BuildNumber == 0 {
 		latestTag.Patch++
 	}
