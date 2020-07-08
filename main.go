@@ -7,6 +7,7 @@ import (
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -68,16 +69,25 @@ func getHeadCommit(r *git.Repository) (*object.Commit, error) {
 	return commit, err
 }
 
-func summeryCommitMessage(r *git.Repository, prevLatestTag *VersionTag) string {
+func summeryCommitMessage(r *git.Repository, prevLatestTag *VersionTag) (string, error) {
 	head, err := r.Head()
+	if err != nil {
+		log.Printf("Failed to get head reference: %s", err.Error())
+		return "", err
+	}
 
-	ExitIfError(err)
 	cIter, err := r.Log(&git.LogOptions{From: head.Hash()})
 	var messages []string
 	commit, err := cIter.Next()
-	ExitIfError(err)
+	if err != nil {
+		log.Printf("Failed to get head commit: %s", err.Error())
+		return "", err
+	}
 	prevTagCommit, err := prevLatestTag.Tag.Commit()
-	ExitIfError(err)
+	if err != nil {
+		log.Printf("Failed to get latest tag: %s", err.Error())
+		return "", err
+	}
 	for commit != nil && commit.Hash != prevTagCommit.Hash {
 		messages = append(messages, commit.Message)
 		commit, err = cIter.Next()
@@ -87,11 +97,11 @@ func summeryCommitMessage(r *git.Repository, prevLatestTag *VersionTag) string {
 	}
 	switch len(messages) {
 	case 0:
-		return "Nothing new, Just for tagging."
+		return "Nothing new, Just for tagging.", nil
 	case 1:
-		return fmt.Sprintf("* %s", messages[0])
+		return fmt.Sprintf("* %s", messages[0]), nil
 	default:
-		return strings.Join(messages, "* ")
+		return strings.Join(messages, "* "), nil
 	}
 }
 
@@ -152,7 +162,10 @@ func main() {
 	latestTag.BuildNumber++
 	// Increase build number
 
-	message := summeryCommitMessage(r, &latestTag)
+	message, err := summeryCommitMessage(r, &latestTag)
+	if err != nil {
+		message = fmt.Sprintf("Failed summery commit messages <%s>", err)
+	}
 	opts := &git.CreateTagOptions{
 		Tagger: &object.Signature{
 			Name:  "whiteblock",
