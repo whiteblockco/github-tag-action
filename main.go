@@ -135,7 +135,8 @@ func getLatestTag(tagIter *object.TagIter) (VersionTag, error) {
 		tmpTag, err := parseTag(*t)
 		Info("parsed tag: %s", tmpTag)
 		if err != nil {
-			return err
+			Warning(err.Error())
+			return nil
 		}
 		if isNewerVersion(&latestTag, &tmpTag) {
 			latestTag = tmpTag
