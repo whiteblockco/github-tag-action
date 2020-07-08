@@ -95,14 +95,15 @@ func summeryCommitMessage(r *git.Repository, prevLatestTag *VersionTag) (string,
 			break
 		}
 	}
-	switch len(messages) {
-	case 0:
-		return "Nothing new, Just for tagging.", nil
-	case 1:
-		return fmt.Sprintf("* %s", messages[0]), nil
-	default:
-		return strings.Join(messages, "* "), nil
+
+	summery := ""
+	for i := range messages {
+		summery += "*" + messages[i]
 	}
+	if summery == "" {
+		summery = "Nothing new, Just for tagging."
+	}
+	return summery, nil
 }
 
 func isNewerVersion(old, new *VersionTag) bool {
