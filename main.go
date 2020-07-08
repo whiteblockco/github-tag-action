@@ -156,6 +156,7 @@ func main() {
 	ExitIfError(err)
 
 	latestTag := getLatestTag(tags)
+	log.Printf("::debug:: latestTag: %s", latestTag.Tag.Name)
 	if latestTag.BuildNumber == 0 {
 		latestTag.Patch++
 	}
@@ -193,4 +194,5 @@ func main() {
 		RefSpecs: []config.RefSpec{config.RefSpec(refSpec)},
 	})
 	ExitIfError(err)
+	Info("Success to bump version: %s", newTag)
 }
