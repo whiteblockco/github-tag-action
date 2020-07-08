@@ -133,12 +133,14 @@ func getLatestTag(tagIter *object.TagIter) (VersionTag, error) {
 	}
 	if err := tagIter.ForEach(func(t *object.Tag) error {
 		tmpTag, err := parseTag(*t)
+		Info("parsed tag: %s", tmpTag)
 		if err != nil {
 			return err
 		}
 		if isNewerVersion(&latestTag, &tmpTag) {
 			latestTag = tmpTag
 		}
+		Info("latestTag: %s", tmpTag)
 		return nil
 	}); err != nil {
 		return latestTag, err
@@ -160,7 +162,7 @@ func main() {
 	latestTag, err := getLatestTag(tags)
 	ExitIfError(err)
 
-	Info("::debug:: latestTag: %s", latestTag.Tag.Name)
+	Info("latestTag: %s", latestTag.Tag.Name)
 	if latestTag.BuildNumber == 0 {
 		latestTag.Patch++
 	}
