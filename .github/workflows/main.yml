@@ -11,6 +11,6 @@ jobs:
       with:
         fetch-depth: '0'
     - name: Bump version and push tag
-      uses: whiteblockco/github-tag-action@master
+      uses: whiteblockco/github-tag-action@develop
       env:
         REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
