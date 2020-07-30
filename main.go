@@ -41,7 +41,13 @@ func Warning(format string, args ...interface{}) {
 }
 
 func parseTag(tag object.Tag) (VersionTag, error) {
-	arr := strings.Split(tag.Name, ".")
+	var tagName string
+	if strings.HasPrefix(tag.Name, "v") {
+		tagName = tag.Name[1:]
+	} else {
+		tagName = tag.Name
+	}
+	arr := strings.Split(tagName, ".")
 	if len(arr) != 3 {
 		return VersionTag{}, errors.New(fmt.Sprintf("Invalid tag format: <%s>", tag.Name))
 	}
@@ -186,7 +192,13 @@ func main() {
 	c, err := getHeadCommit(r)
 	ExitIfError(err)
 	err = opts.Validate(r, c.Hash)
-	newTag := fmt.Sprintf("%d.%d.%d-%d", latestTag.Major, latestTag.Minor, latestTag.Patch, latestTag.BuildNumber)
+	var newTag string
+	if os.Getenv("WITHOUT_V") == "true" {
+		newTag = fmt.Sprintf("%d.%d.%d-%d", latestTag.Major, latestTag.Minor, latestTag.Patch, latestTag.BuildNumber)
+	} else {
+		newTag = fmt.Sprintf("v%d.%d.%d-%d", latestTag.Major, latestTag.Minor, latestTag.Patch, latestTag.BuildNumber)
+	}
+
 	_, err = r.CreateTag(newTag, c.Hash, opts)
 	ExitIfError(err)
 	Info("[info] Latest commit: ", c)

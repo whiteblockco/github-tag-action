@@ -27,6 +27,7 @@ jobs:
       uses: whiteblockco/github-tag-action@master
       env:
         REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        WITHOUT_V: true  
 ```
 
 > GitHub automatically creates a GITHUB_TOKEN secret to use in your workflow. You can use the GITHUB_TOKEN to authenticate in a workflow run.
