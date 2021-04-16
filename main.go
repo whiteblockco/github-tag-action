@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"os"
 	"strconv"
@@ -14,7 +16,7 @@ import (
 )
 
 type VersionTag struct {
-	Tag         object.Tag
+	ref         *plumbing.Reference
 	Major       int
 	Minor       int
 	Patch       int
@@ -40,16 +42,16 @@ func Warning(format string, args ...interface{}) {
 	fmt.Printf("\x1b[36;1m%s\x1b[0m\n", fmt.Sprintf(format, args...))
 }
 
-func parseTag(tag object.Tag) (VersionTag, error) {
+func parseTag(ref *plumbing.Reference) (VersionTag, error) {
 	var tagName string
-	if strings.HasPrefix(tag.Name, "v") {
-		tagName = tag.Name[1:]
+	if strings.HasPrefix(ref.Name().Short(), "v") {
+		tagName = ref.Name().Short()[1:]
 	} else {
-		tagName = tag.Name
+		tagName = ref.Name().Short()
 	}
 	arr := strings.Split(tagName, ".")
 	if len(arr) != 3 {
-		return VersionTag{}, errors.New(fmt.Sprintf("Invalid tag format: <%s>", tag.Name))
+		return VersionTag{}, errors.New(fmt.Sprintf("Invalid tag format: <%s>", ref.Name()))
 	}
 
 	major, _ := strconv.Atoi(arr[0])
@@ -61,7 +63,7 @@ func parseTag(tag object.Tag) (VersionTag, error) {
 		patch, _ = strconv.Atoi(str[0])
 		buildNumber, _ = strconv.Atoi(str[1])
 	}
-	return VersionTag{tag, major, minor, patch, buildNumber}, nil
+	return VersionTag{ref, major, minor, patch, buildNumber}, nil
 }
 
 func getHeadCommit(r *git.Repository) (*object.Commit, error) {
@@ -88,11 +90,14 @@ func summeryCommitMessage(r *git.Repository, prevLatestTag *VersionTag) (string,
 		Warning("[warning] Failed to get head commit: %s", err.Error())
 		return "", err
 	}
-	prevTagCommit, err := prevLatestTag.Tag.Commit()
+
+	h, err := r.ResolveRevision(plumbing.Revision(prevLatestTag.ref.Hash().String()))
 	if err != nil {
 		Warning("[warning] Failed to get latest tag: %s", err.Error())
 		return "", err
 	}
+	obj, err := r.Object(plumbing.AnyObject, *h)
+	prevTagCommit := obj.(*object.Commit)
 	for commit != nil && commit.Hash != prevTagCommit.Hash {
 		messages = append(messages, commit.Message)
 		commit, err = cIter.Next()
@@ -130,15 +135,16 @@ func isNewerVersion(old, new *VersionTag) bool {
 	return true
 }
 
-func getLatestTag(tagIter *object.TagIter) (VersionTag, error) {
+func getLatestTag(tagIter storer.ReferenceIter) (VersionTag, error) {
 	latestTag := VersionTag{
 		Major:       0,
 		Minor:       0,
 		Patch:       0,
 		BuildNumber: 0,
 	}
-	if err := tagIter.ForEach(func(t *object.Tag) error {
-		tmpTag, err := parseTag(*t)
+	if err := tagIter.ForEach(func(ref *plumbing.Reference) error {
+		var tmpTag VersionTag
+		tmpTag, err := parseTag(ref)
 		if err != nil {
 			Warning(err.Error())
 			return nil
@@ -161,13 +167,13 @@ func koreanTime() time.Time {
 func main() {
 	r, _ := git.PlainOpen("./")
 
-	tags, err := r.TagObjects()
+	tags, err := r.Tags()
 	ExitIfError(err)
 
 	latestTag, err := getLatestTag(tags)
 	ExitIfError(err)
 
-	Info("[info] latestTag: %s", latestTag.Tag.Name)
+	Info("[info] latestTag: %s", latestTag.ref.Name().Short())
 	if latestTag.BuildNumber == 0 {
 		latestTag.Patch++
 	}
