@@ -165,7 +165,7 @@ func koreanTime() time.Time {
 }
 
 func main() {
-	r, _ := git.PlainOpen("../itsme-enterprise-web/")
+	r, _ := git.PlainOpen("./")
 
 	tags, err := r.Tags()
 	ExitIfError(err)
