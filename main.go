@@ -135,14 +135,14 @@ func isNewerVersion(old, new *VersionTag) bool {
 	return true
 }
 
-func getLatestTag(tagIter storer.ReferenceIter) (VersionTag, error) {
+func getLatestTag(refIter storer.ReferenceIter) (VersionTag, error) {
 	latestTag := VersionTag{
 		Major:       0,
 		Minor:       0,
 		Patch:       0,
 		BuildNumber: 0,
 	}
-	if err := tagIter.ForEach(func(ref *plumbing.Reference) error {
+	if err := refIter.ForEach(func(ref *plumbing.Reference) error {
 		var tmpTag VersionTag
 		tmpTag, err := parseTag(ref)
 		if err != nil {
