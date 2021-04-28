@@ -101,8 +101,8 @@ func main() {
 	latest := &VersionTag{
 		ref:   h,
 		Tag:   "v",
-		Major: 0,
-		Minor: 0,
+		Major: major,
+		Minor: minor,
 		Patch: 0,
 		Pre:   "",
 		Build: "",
