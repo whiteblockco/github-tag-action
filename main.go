@@ -157,20 +157,14 @@ func main() {
 		panic(err)
 	}
 
-	var newTag string
-	if os.Getenv("WITHOUT_V") == "true" {
-		newTag = fmt.Sprintf("%d.%d.%d", latest.Major, latest.Minor, latest.Patch)
-	} else {
-		newTag = fmt.Sprintf("v%d.%d.%d", latest.Major, latest.Minor, latest.Patch)
-	}
 
-	_, err = r.CreateTag(newTag, c.Hash, opts)
+	_, err = r.CreateTag(latest.String(), c.Hash, opts)
 	if err != nil {
 		panic(err)
 	}
 
 	Info("Latest commit: ", c)
-	refSpec := fmt.Sprintf("+refs/tags/%s:refs/tags/%s", newTag, newTag)
+	refSpec := fmt.Sprintf("+refs/tags/%s:refs/tags/%s", latest.String(), latest.String())
 	err = r.Push(&git.PushOptions{
 		Auth: &http.BasicAuth{
 			Username: "USER_NAME", // this can be anything except an empty string
@@ -182,7 +176,7 @@ func main() {
 		panic(err)
 	}
 
-	Info("Success to bump version: %s", newTag)
+	Info("Success to bump version: %s", latest.String())
 }
 
 // Info should be used to describe the example commands that are about to run.
