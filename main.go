@@ -129,7 +129,11 @@ func main() {
 		panic(err)
 	}
 
+	fmt.Println(latest.String())
+
 	latest.Patch++
+
+	fmt.Println(latest.String())
 
 	message, err := summeryCommitMessage(r, latest)
 	if err != nil {
