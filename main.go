@@ -111,7 +111,7 @@ func main() {
 	err = tags.ForEach(func(ref *plumbing.Reference) error {
 		current, err := parseTag(ref)
 		if err != nil {
-			return err
+			return nil
 		}
 
 		// not a tag of this release
