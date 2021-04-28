@@ -196,7 +196,7 @@ func Warning(format string, args ...interface{}) {
 }
 
 func parseTag(ref *plumbing.Reference) (*VersionTag, error) {
-	version, err := VersionFromString(ref.Name().String())
+	version, err := VersionFromString(ref.Name().Short())
 	if err != nil {
 		return nil, err
 	}
