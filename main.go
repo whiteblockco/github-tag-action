@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -72,22 +73,20 @@ var (
 	//preRegex           = regexp.MustCompile("([a-zA-Z]+\\.)?(0|[1-9]\\d*)")
 )
 
-func main() {
-	r, _ := git.PlainOpen("./")
-
+func workflowRelease(r *git.Repository) (*VersionTag, error) {
 	h, err := r.Head()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	if !h.Name().IsBranch() {
-		panic("release workflow must be branch")
+		return nil, errors.New("release workflow must be branch")
 	}
 
 	branchName := h.Name().String()
 
 	if !releaseBranchRegex.MatchString(branchName) {
-		panic(fmt.Errorf("not matching branch name pattern: wanted %s, got %s ", releaseBranchRegex.String(), branchName))
+		return nil, fmt.Errorf("not matching branch name pattern: wanted %s, got %s ", releaseBranchRegex.String(), branchName)
 	}
 
 	major, _ := strconv.Atoi(releaseBranchRegex.FindStringSubmatch(branchName)[1])
@@ -95,7 +94,7 @@ func main() {
 
 	tags, err := r.Tags()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	latest := &VersionTag{
@@ -126,12 +125,25 @@ func main() {
 		return nil
 	})
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	latest.Patch++
+	latest.Pre = ""
+	latest.Build = ""
 
-	message, err := summeryCommitMessage(r, latest)
+	return latest, nil
+}
+
+func main() {
+	r, _ := git.PlainOpen("./")
+
+	version, err := workflowRelease(r)
+	if err != nil {
+		panic(err)
+	}
+
+	message, err := summeryCommitMessage(r, version)
 	if err != nil {
 		message = fmt.Sprintf("Failed summery commit messages <%s>", err)
 	}
@@ -157,14 +169,13 @@ func main() {
 		panic(err)
 	}
 
-
-	_, err = r.CreateTag(latest.String(), c.Hash, opts)
+	_, err = r.CreateTag(version.String(), c.Hash, opts)
 	if err != nil {
 		panic(err)
 	}
 
 	Info("Latest commit: ", c)
-	refSpec := fmt.Sprintf("+refs/tags/%s:refs/tags/%s", latest.String(), latest.String())
+	refSpec := fmt.Sprintf("+refs/tags/%s:refs/tags/%s", version.String(), version.String())
 	err = r.Push(&git.PushOptions{
 		Auth: &http.BasicAuth{
 			Username: "USER_NAME", // this can be anything except an empty string
@@ -176,7 +187,7 @@ func main() {
 		panic(err)
 	}
 
-	Info("Success to bump version: %s", latest.String())
+	Info("Success to bump version: %s", version.String())
 }
 
 // Info should be used to describe the example commands that are about to run.
