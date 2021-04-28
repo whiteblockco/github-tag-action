@@ -1,7 +1,7 @@
-FROM golang:1.13 as builder
+FROM golang:1.16 as builder
 
 WORKDIR /app
-COPY . /app
+ADD ['main.go', 'go.mod', 'go.sum', './']
 
 RUN go get -d -v
 
