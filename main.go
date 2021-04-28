@@ -108,8 +108,6 @@ func main() {
 		Build: "",
 	}
 
-	fmt.Println("branch:", major, minor)
-
 	err = tags.ForEach(func(ref *plumbing.Reference) error {
 		current, err := parseTag(ref)
 		if err != nil {
@@ -131,11 +129,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println(latest.String())
-
 	latest.Patch++
-
-	fmt.Println(latest.String())
 
 	message, err := summeryCommitMessage(r, latest)
 	if err != nil {
