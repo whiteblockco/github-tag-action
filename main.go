@@ -98,7 +98,15 @@ func main() {
 		panic(err)
 	}
 
-	latest := &VersionTag{}
+	latest := &VersionTag{
+		ref:   h,
+		Tag:   "v",
+		Major: 0,
+		Minor: 0,
+		Patch: 0,
+		Pre:   "",
+		Build: "",
+	}
 
 	err = tags.ForEach(func(ref *plumbing.Reference) error {
 		current, err := parseTag(ref)
@@ -188,7 +196,14 @@ func Warning(format string, args ...interface{}) {
 }
 
 func parseTag(ref *plumbing.Reference) (*VersionTag, error) {
-	return VersionFromString(ref.Name().String())
+	version, err := VersionFromString(ref.Name().String())
+	if err != nil {
+		return nil, err
+	}
+
+	version.ref = ref
+
+	return version, nil
 }
 
 func getHeadCommit(r *git.Repository) (*object.Commit, error) {
