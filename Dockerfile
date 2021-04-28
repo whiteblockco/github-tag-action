@@ -1,7 +1,9 @@
 FROM golang:1.16 as builder
 
 WORKDIR /app
-ADD ['main.go', 'go.mod', 'go.sum', './']
+ADD main.go .
+ADD go.mod .
+ADD go.sum .
 
 RUN go get -d -v
 
